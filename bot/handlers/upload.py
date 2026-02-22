@@ -1,4 +1,5 @@
 import re
+import uuid
 import logging
 import httpx
 from aiogram import Router, F, Bot
@@ -7,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from pyrogram import Client as PyrogramClient
-from config import BACKEND_URL
+from config import BACKEND_URL, SUPABASE_URL, SUPABASE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -156,14 +157,13 @@ async def _process_upload(
     file_id: str | None = None,
     pyrogram_client: PyrogramClient = None,
 ):
-    # Если file_id не передан, берём из сообщения (вариант Б)
     if not file_id:
         file_id = _get_file_id(message)
         if not file_id:
             await message.answer("Не удалось получить аудиофайл.")
             return
 
-    # Скачиваем файл через Pyrogram (MTProto, лимит 2GB)
+    # 1. Скачиваем файл через Pyrogram (MTProto, лимит 2GB)
     try:
         downloaded = await pyrogram_client.download_media(
             file_id,
@@ -175,24 +175,47 @@ async def _process_upload(
         await message.answer(f"Ошибка при скачивании файла: {e}")
         return
 
-    result_text = RESULT_MAP.get(parsed["result"], parsed["result"])
+    logger.info(f"Downloaded {len(audio_data)} bytes from Telegram")
 
-    # Отправляем на backend
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0)) as client:
+    # 2. Загружаем напрямую в Supabase Storage
+    audio_filename = f"{uuid.uuid4()}.ogg"
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0)) as client:
+            storage_resp = await client.post(
+                f"{SUPABASE_URL}/storage/v1/object/audio/{audio_filename}",
+                headers={
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "audio/ogg",
+                },
+                content=audio_data,
+            )
+        if storage_resp.status_code not in (200, 201):
+            logger.error(f"Supabase Storage upload failed: {storage_resp.status_code} {storage_resp.text}")
+            await message.answer(f"Ошибка загрузки аудио в хранилище: {storage_resp.text}")
+            return
+    except Exception as e:
+        logger.error(f"Supabase Storage upload error: {e}")
+        await message.answer(f"Ошибка загрузки аудио: {e}")
+        return
+
+    logger.info(f"Uploaded to Supabase Storage: {audio_filename}")
+
+    # 3. Отправляем только метаданные на backend
+    result_text = RESULT_MAP.get(parsed["result"], parsed["result"])
+    async with httpx.AsyncClient() as client:
         resp = await client.post(
             f"{BACKEND_URL}/api/recordings",
-            data={
-                "employee_telegram_id": str(employee["telegram_id"]),
+            json={
+                "employee_telegram_id": employee["telegram_id"],
                 "client_name": parsed["client_name"],
                 "lesson_datetime": parsed["lesson_datetime"],
                 "result": parsed["result"],
                 "city": employee["city"],
+                "audio_path": audio_filename,
             },
-            files={"audio": ("recording.ogg", audio_data, "audio/ogg")},
         )
 
     if resp.status_code == 200:
-        rec = resp.json()
         await message.answer(
             f"Запись принята!\n\n"
             f"Клиент: {parsed['client_name']}\n"

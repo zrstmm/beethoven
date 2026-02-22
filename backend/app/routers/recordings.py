@@ -1,9 +1,7 @@
-import uuid
-import asyncio
 import logging
-from functools import partial
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from app.database import supabase
 from app.schemas import RecordingOut, RecordingStatusOut, ClientResult, City
 from app.services.pipeline import run_pipeline_background
@@ -13,20 +11,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/recordings", tags=["recordings"])
 
 
+class CreateRecordingRequest(BaseModel):
+    employee_telegram_id: int
+    client_name: str
+    lesson_datetime: str  # "DD.MM.YYYY HH:MM"
+    result: ClientResult
+    city: City
+    audio_path: str  # filename in Supabase Storage (uploaded by bot)
+
+
 @router.post("", response_model=RecordingOut)
-async def create_recording(
-    audio: UploadFile = File(...),
-    employee_telegram_id: int = Form(...),
-    client_name: str = Form(...),
-    lesson_datetime: str = Form(...),  # "DD.MM.YYYY HH:MM"
-    result: ClientResult = Form(...),
-    city: City = Form(...),
-):
-    logger.info(f"Recording upload: employee={employee_telegram_id}, client={client_name}, dt={lesson_datetime}, result={result}, city={city}, audio={audio.filename} ({audio.content_type})")
+async def create_recording(body: CreateRecordingRequest):
+    logger.info(f"Recording: employee={body.employee_telegram_id}, client={body.client_name}, dt={body.lesson_datetime}, result={body.result}, city={body.city}, audio={body.audio_path}")
 
     # 1. Находим сотрудника
     emp = supabase.table("employees").select("*").eq(
-        "telegram_id", employee_telegram_id
+        "telegram_id", body.employee_telegram_id
     ).execute()
     if not emp.data:
         raise HTTPException(status_code=404, detail="Employee not found")
@@ -34,7 +34,7 @@ async def create_recording(
 
     # 2. Парсим дату
     try:
-        parsed_dt = datetime.strptime(lesson_datetime, "%d.%m.%Y %H:%M")
+        parsed_dt = datetime.strptime(body.lesson_datetime, "%d.%m.%Y %H:%M")
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid datetime format. Use DD.MM.YYYY HH:MM")
 
@@ -42,51 +42,34 @@ async def create_recording(
 
     # 3. Находим или создаём клиента
     existing_client = supabase.table("clients").select("*").eq(
-        "name", client_name
-    ).eq("city", city.value).eq("lesson_datetime", dt_iso).execute()
+        "name", body.client_name
+    ).eq("city", body.city.value).eq("lesson_datetime", dt_iso).execute()
 
     if existing_client.data:
         client = existing_client.data[0]
-        # Обновляем result если ещё не был установлен
         if not client.get("result"):
             supabase.table("clients").update(
-                {"result": result.value}
+                {"result": body.result.value}
             ).eq("id", client["id"]).execute()
     else:
         client_res = supabase.table("clients").insert({
-            "name": client_name,
-            "city": city.value,
+            "name": body.client_name,
+            "city": body.city.value,
             "lesson_datetime": dt_iso,
-            "result": result.value,
+            "result": body.result.value,
         }).execute()
         client = client_res.data[0]
 
-    # 4. Загружаем аудио в Storage (в отдельном потоке, чтобы не блокировать event loop)
-    audio_bytes = await audio.read()
-    ext = audio.filename.split(".")[-1] if audio.filename and "." in audio.filename else "ogg"
-    content_type = audio.content_type or "audio/ogg"
-    audio_filename = f"{uuid.uuid4()}.{ext}"
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,
-        partial(
-            supabase.storage.from_("audio").upload,
-            audio_filename,
-            audio_bytes,
-            file_options={"content-type": content_type},
-        ),
-    )
-
-    # 5. Создаём запись
+    # 4. Создаём запись (аудио уже загружено ботом в Supabase Storage)
     rec = supabase.table("recordings").insert({
         "client_id": client["id"],
         "employee_id": employee["id"],
-        "audio_path": audio_filename,
+        "audio_path": body.audio_path,
         "status": "pending",
     }).execute()
     recording = rec.data[0]
 
-    # 6. Запускаем pipeline в фоне
+    # 5. Запускаем pipeline в фоне
     run_pipeline_background(recording["id"], employee["role"])
 
     return recording

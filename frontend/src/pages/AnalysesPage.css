@@ -1,0 +1,177 @@
+.analyses-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-btn {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.week-btn:hover {
+  background: var(--bg-hover);
+}
+
+.calendar-btn {
+  font-size: 18px;
+  padding: 4px 10px;
+}
+
+.week-label {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 220px;
+  text-align: center;
+}
+
+.date-picker-wrap {
+  position: relative;
+}
+
+.date-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 50;
+}
+
+.date-picker-dropdown input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.date-picker-go {
+  background: var(--accent);
+  color: #000;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  min-height: 500px;
+}
+
+.kanban-col {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.kanban-col.today {
+  border-color: var(--accent);
+}
+
+.kanban-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.day-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.kanban-col.today .day-name {
+  color: var(--accent);
+}
+
+.day-date {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kanban-cards {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.client-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.client-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.card-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.card-client {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.card-employee {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.card-result {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.card-score {
+  font-size: 11px;
+  color: var(--text-muted);
+}

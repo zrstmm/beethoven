@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(D:/repo/beethoven/bot/venv/Scripts/pip install:*)",
+      "Bash(cd:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

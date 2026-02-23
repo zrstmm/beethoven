@@ -5,7 +5,11 @@
       "Bash(D:/repo/beethoven/bot/venv/Scripts/pip install:*)",
       "Bash(cd:*)",
       "Bash(cmd.exe:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cd D:/repo/beethoven && git push -u origin main 2>&1)",
+      "Bash(tasklist:*)",
+      "Bash(cd /d/repo/beethoven && git push -u origin main 2>&1)",
+      "WebSearch"
     ]
   }
 }

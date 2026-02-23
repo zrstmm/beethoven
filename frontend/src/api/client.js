@@ -57,6 +57,19 @@ export async function getClientDetail(id) {
   return request(`/clients/${id}`)
 }
 
+export async function updateClient(id, data) {
+  return request(`/clients/${id}`, {
+    method: 'PUT',
+    body: data,
+  })
+}
+
+export async function deleteClient(id) {
+  return request(`/clients/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export async function getAnalytics(city, dateFrom, dateTo) {
   return request(`/analytics?city=${city}&date_from=${dateFrom}&date_to=${dateTo}`)
 }

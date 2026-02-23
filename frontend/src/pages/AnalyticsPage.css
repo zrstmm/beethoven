@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: slideUp 0.3s ease;
 }
 
 .analytics-filters {
@@ -14,7 +15,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -23,8 +24,8 @@
   border: 1px solid var(--border);
   color: var(--text);
   padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
 }
 
 .analytics-loading {
@@ -33,7 +34,13 @@
   padding: 40px;
 }
 
-.analytics-grid {
+.analytics-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.analytics-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -42,19 +49,23 @@
 .analytics-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 20px;
 }
 
+.analytics-card.analytics-full {
+  /* Full width card in sections */
+}
+
 .analytics-card h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .analytics-total {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-bottom: 12px;
 }
@@ -66,10 +77,40 @@
   padding: 20px;
 }
 
+/* Donut chart center label */
+.donut-wrap {
+  position: relative;
+}
+
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.donut-pct {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.donut-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Top lists */
 .top-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .top-item {
@@ -77,12 +118,12 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--bg-card);
 }
 
 .top-rank {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
   min-width: 24px;
@@ -109,14 +150,72 @@
   font-weight: 700;
 }
 
-.top-best .top-score {
+.top-score-best {
   color: var(--green);
 }
 
-.top-worst .top-score {
+.top-score-worst {
   color: var(--red);
 }
 
+/* Employee performance table */
+.perf-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.perf-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.perf-table td {
+  padding: 10px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.perf-table tr:last-child td {
+  border-bottom: none;
+}
+
+.perf-name {
+  font-weight: 500;
+}
+
+.perf-role {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.perf-count {
+  color: var(--text-muted);
+}
+
+.perf-score {
+  font-weight: 700;
+}
+
+.perf-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.perf-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* Mistakes */
 .mistakes-list {
   list-style: none;
   display: flex;
@@ -126,8 +225,8 @@
 
 .mistakes-list li {
   font-size: 13px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: var(--bg-card);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border-left: 3px solid var(--red);
 }

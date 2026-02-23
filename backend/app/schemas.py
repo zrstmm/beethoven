@@ -61,7 +61,7 @@ class RecordingCreate(BaseModel):
     employee_telegram_id: int
     client_name: str
     lesson_datetime: str  # "DD.MM.YYYY HH:MM"
-    result: ClientResult
+    result: Optional[ClientResult] = None
     city: City
 
 
@@ -69,7 +69,7 @@ class RecordingOut(BaseModel):
     id: str
     client_id: str
     employee_id: str
-    audio_path: str
+    audio_path: Optional[str] = None
     transcription: Optional[str] = None
     analysis: Optional[str] = None
     score: Optional[int] = None
@@ -118,6 +118,12 @@ class ClientDetail(BaseModel):
     recordings: list[RecordingDetail] = []
 
 
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    lesson_datetime: Optional[str] = None
+    result: Optional[ClientResult] = None
+
+
 # --- Auth ---
 
 class LoginRequest(BaseModel):
@@ -158,8 +164,42 @@ class TopRecording(BaseModel):
     lesson_datetime: datetime
 
 
+class EmployeePerformance(BaseModel):
+    employee_name: str
+    role: EmployeeRole
+    avg_score: float
+    recording_count: int
+
+
+class DirectionBreakdown(BaseModel):
+    direction: str
+    client_count: int
+    bought: int
+    not_bought: int
+    prepayment: int
+    avg_score: float
+
+
+class WeeklyTrend(BaseModel):
+    week_start: str
+    total: int
+    bought: int
+    not_bought: int
+    prepayment: int
+    conversion_rate: float
+
+
+class ScoreDistribution(BaseModel):
+    score: int
+    count: int
+
+
 class AnalyticsOut(BaseModel):
     conversion: ConversionStats
     top_best: list[TopRecording]
     top_worst: list[TopRecording]
     common_mistakes: list[str]
+    employee_performance: list[EmployeePerformance] = []
+    direction_breakdown: list[DirectionBreakdown] = []
+    weekly_trends: list[WeeklyTrend] = []
+    score_distribution: list[ScoreDistribution] = []

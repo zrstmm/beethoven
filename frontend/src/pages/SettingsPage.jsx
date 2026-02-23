@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSettings, updateSetting } from '../api/client'
+import { Settings } from 'lucide-react'
 import './SettingsPage.css'
 
 const SETTING_LABELS = {
@@ -50,12 +51,15 @@ export default function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <h2 className="settings-title">Настройки</h2>
+      <div className="settings-header">
+        <Settings size={20} />
+        <h2 className="settings-title">Настройки</h2>
+      </div>
       {settings.map(setting => {
         const isPassword = setting.key === 'admin_password'
         const hasChanges = edited[setting.key] !== setting.value
         return (
-          <div key={setting.key} className="setting-block">
+          <div key={setting.key} className="setting-card">
             <label className="setting-label">
               {SETTING_LABELS[setting.key] || setting.key}
             </label>

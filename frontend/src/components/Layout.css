@@ -6,7 +6,9 @@
 
 .header {
   height: var(--header-height);
-  background: var(--bg-secondary);
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -25,10 +27,10 @@
 }
 
 .logo {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 3px;
+  color: var(--text);
+  letter-spacing: 4px;
 }
 
 .header-right {
@@ -37,21 +39,41 @@
   gap: 12px;
 }
 
-.city-select {
+.city-segmented {
+  display: flex;
   background: var(--bg-card);
-  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 2px;
   border: 1px solid var(--border);
-  padding: 6px 12px;
+}
+
+.city-seg-btn {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 14px;
   border-radius: 6px;
-  font-size: 14px;
+  transition: all var(--transition);
+}
+
+.city-seg-btn.active {
+  background: var(--accent);
+  color: #000;
+}
+
+.city-seg-btn:not(.active):hover {
+  color: var(--text);
 }
 
 .logout-btn {
   background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
-  padding: 6px 12px;
+  padding: 6px;
   border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition);
 }
 
 .logout-btn:hover {
@@ -75,20 +97,27 @@
   bottom: 0;
   left: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
 }
 
 .nav-link {
-  display: block;
-  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
   color: var(--text-muted);
-  font-size: 14px;
-  transition: all 0.15s;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition);
+  border-left: 3px solid transparent;
 }
 
 .nav-link:hover {
@@ -97,13 +126,33 @@
 }
 
 .nav-link.active {
-  color: var(--accent);
+  color: var(--text);
   background: var(--bg-hover);
-  border-right: 3px solid var(--accent);
+  border-left-color: var(--accent);
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  border-left: 3px solid transparent;
+  transition: all var(--transition);
+  margin-top: auto;
+}
+
+.sidebar-logout:hover {
+  color: var(--red);
+  background: var(--bg-hover);
 }
 
 .content {
   flex: 1;
   margin-left: var(--sidebar-width);
   padding: 24px;
+  animation: fadeIn 0.3s ease;
 }

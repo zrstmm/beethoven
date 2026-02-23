@@ -1,11 +1,19 @@
 .settings-page {
   max-width: 700px;
+  animation: slideUp 0.3s ease;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  color: var(--text);
 }
 
 .settings-title {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 24px;
 }
 
 .settings-loading {
@@ -14,16 +22,20 @@
   text-align: center;
 }
 
-.setting-block {
-  margin-bottom: 24px;
+.setting-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
 }
 
 .setting-label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
-  margin-bottom: 8px;
+  color: var(--text);
+  margin-bottom: 10px;
 }
 
 .setting-textarea {
@@ -31,12 +43,13 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 12px;
   font-size: 13px;
-  font-family: monospace;
+  font-family: 'SF Mono', 'Fira Code', monospace;
   line-height: 1.5;
   resize: vertical;
+  transition: border-color var(--transition);
 }
 
 .setting-textarea:focus {
@@ -49,9 +62,10 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
   font-size: 14px;
+  transition: border-color var(--transition);
 }
 
 .setting-input:focus {
@@ -61,13 +75,14 @@
 
 .setting-save {
   display: inline-block;
-  margin-top: 8px;
+  margin-top: 12px;
   background: var(--accent);
   color: #000;
-  padding: 8px 20px;
-  border-radius: 6px;
+  padding: 8px 24px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
+  transition: all var(--transition);
 }
 
 .setting-save:hover {
@@ -75,6 +90,6 @@
 }
 
 .setting-save:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: default;
 }

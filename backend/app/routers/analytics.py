@@ -1,7 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict
 from fastapi import APIRouter, Depends, Query, HTTPException
 from app.database import supabase
-from app.schemas import AnalyticsOut, ConversionStats, TopRecording, City
+from app.schemas import (
+    AnalyticsOut, ConversionStats, TopRecording, City,
+    EmployeePerformance, DirectionBreakdown, WeeklyTrend, ScoreDistribution,
+)
 from app.auth import verify_token
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -46,7 +50,7 @@ async def get_analytics(
     recordings = []
     if client_ids:
         recs = supabase.table("recordings").select(
-            "*, employees!inner(name, role), clients!inner(name, result, lesson_datetime)"
+            "*, employees!inner(name, role, directions), clients!inner(name, result, lesson_datetime)"
         ).in_("client_id", client_ids).eq("status", "done").not_.is_(
             "score", "null"
         ).execute()
@@ -69,16 +73,13 @@ async def get_analytics(
     top_best = [to_top_recording(r) for r in sorted_best[:3]]
     top_worst = [to_top_recording(r) for r in sorted_worst[:3]]
 
-    # Частые ошибки — собираем из анализов
-    # Простой подход: берём анализы с низкой оценкой и ищем паттерны
+    # Частые ошибки
     common_mistakes = []
     low_score_analyses = [
         r.get("analysis", "") for r in recordings
         if r.get("score", 10) <= 5 and r.get("analysis")
     ]
     if low_score_analyses:
-        # Простая аггрегация — возвращаем первые строки из анализов с низкой оценкой
-        # В будущем можно отправить в LLM для суммаризации
         for analysis in low_score_analyses[:5]:
             lines = analysis.split("\n")
             for line in lines:
@@ -88,9 +89,110 @@ async def get_analytics(
                     break
         common_mistakes = common_mistakes[:5]
 
+    # --- Расширенная аналитика ---
+
+    # 1. Employee Performance
+    emp_stats = defaultdict(lambda: {"scores": [], "name": "", "role": ""})
+    for r in recordings:
+        emp = r.get("employees", {})
+        emp_id = r.get("employee_id", "")
+        emp_stats[emp_id]["scores"].append(r.get("score", 0))
+        emp_stats[emp_id]["name"] = emp.get("name", "")
+        emp_stats[emp_id]["role"] = emp.get("role", "teacher")
+
+    employee_performance = []
+    for emp_id, data in emp_stats.items():
+        scores = data["scores"]
+        employee_performance.append(EmployeePerformance(
+            employee_name=data["name"],
+            role=data["role"],
+            avg_score=round(sum(scores) / len(scores), 1) if scores else 0,
+            recording_count=len(scores),
+        ))
+    employee_performance.sort(key=lambda x: x.avg_score, reverse=True)
+
+    # 2. Direction Breakdown
+    dir_stats = defaultdict(lambda: {"clients": set(), "bought": 0, "not_bought": 0, "prepayment": 0, "scores": []})
+    for r in recordings:
+        emp = r.get("employees", {})
+        client_info = r.get("clients", {})
+        directions = emp.get("directions", [])
+        client_id = r.get("client_id", "")
+        result_val = client_info.get("result")
+        score = r.get("score", 0)
+
+        for d in directions:
+            dir_stats[d]["clients"].add(client_id)
+            dir_stats[d]["scores"].append(score)
+            if result_val == "bought":
+                dir_stats[d]["bought"] += 1
+            elif result_val == "not_bought":
+                dir_stats[d]["not_bought"] += 1
+            elif result_val == "prepayment":
+                dir_stats[d]["prepayment"] += 1
+
+    direction_breakdown = []
+    dir_labels = {"guitar": "Гитара", "piano": "Фортепиано", "vocal": "Вокал", "dombra": "Домбра"}
+    for d, data in dir_stats.items():
+        scores = data["scores"]
+        direction_breakdown.append(DirectionBreakdown(
+            direction=dir_labels.get(d, d),
+            client_count=len(data["clients"]),
+            bought=data["bought"],
+            not_bought=data["not_bought"],
+            prepayment=data["prepayment"],
+            avg_score=round(sum(scores) / len(scores), 1) if scores else 0,
+        ))
+
+    # 3. Weekly Trends
+    week_data = defaultdict(lambda: {"total": 0, "bought": 0, "not_bought": 0, "prepayment": 0})
+    for c in clients.data:
+        dt = datetime.fromisoformat(c["lesson_datetime"].replace("Z", "+00:00"))
+        # Monday of that week
+        monday = dt - timedelta(days=dt.weekday())
+        week_key = monday.strftime("%Y-%m-%d")
+        week_data[week_key]["total"] += 1
+        result_val = c.get("result")
+        if result_val == "bought":
+            week_data[week_key]["bought"] += 1
+        elif result_val == "not_bought":
+            week_data[week_key]["not_bought"] += 1
+        elif result_val == "prepayment":
+            week_data[week_key]["prepayment"] += 1
+
+    weekly_trends = []
+    for week_key in sorted(week_data.keys()):
+        d = week_data[week_key]
+        total = d["total"]
+        conv_rate = round(d["bought"] / total * 100, 1) if total > 0 else 0
+        weekly_trends.append(WeeklyTrend(
+            week_start=week_key,
+            total=total,
+            bought=d["bought"],
+            not_bought=d["not_bought"],
+            prepayment=d["prepayment"],
+            conversion_rate=conv_rate,
+        ))
+
+    # 4. Score Distribution
+    score_counts = defaultdict(int)
+    for r in recordings:
+        s = r.get("score")
+        if s is not None:
+            score_counts[s] += 1
+
+    score_distribution = [
+        ScoreDistribution(score=i, count=score_counts.get(i, 0))
+        for i in range(1, 11)
+    ]
+
     return AnalyticsOut(
         conversion=conversion,
         top_best=top_best,
         top_worst=top_worst,
         common_mistakes=common_mistakes,
+        employee_performance=employee_performance,
+        direction_breakdown=direction_breakdown,
+        weekly_trends=weekly_trends,
+        score_distribution=score_distribution,
     )

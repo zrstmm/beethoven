@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, Query
 from app.database import supabase
-from app.schemas import ClientCard, ClientDetail, RecordingDetail, City
+from app.schemas import ClientCard, ClientDetail, ClientUpdate, RecordingDetail, City, ClientResult
 from app.auth import verify_token
 
 router = APIRouter(prefix="/api/clients", tags=["clients"])
@@ -14,8 +14,9 @@ async def get_clients(
     _: str = Depends(verify_token),
 ):
     """Клиенты за неделю для канбан-доски."""
+    KZ_TZ = timezone(timedelta(hours=5))
     try:
-        start = datetime.strptime(week_start, "%Y-%m-%d")
+        start = datetime.strptime(week_start, "%Y-%m-%d").replace(tzinfo=KZ_TZ)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
 
@@ -106,3 +107,47 @@ async def get_client_detail(client_id: str, _: str = Depends(verify_token)):
         result=client.data.get("result"),
         recordings=recordings,
     )
+
+
+@router.put("/{client_id}", response_model=ClientDetail)
+async def update_client(client_id: str, body: ClientUpdate, _: str = Depends(verify_token)):
+    """Редактирование клиента."""
+    # Проверяем существование
+    existing = supabase.table("clients").select("*").eq("id", client_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    update_data = {}
+    if body.name is not None:
+        update_data["name"] = body.name
+    if body.result is not None:
+        update_data["result"] = body.result.value
+    if body.lesson_datetime is not None:
+        KZ_TZ = timezone(timedelta(hours=5))
+        try:
+            parsed_dt = datetime.strptime(body.lesson_datetime, "%d.%m.%Y %H:%M")
+            parsed_dt = parsed_dt.replace(tzinfo=KZ_TZ)
+            update_data["lesson_datetime"] = parsed_dt.isoformat()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid datetime format. Use DD.MM.YYYY HH:MM")
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    supabase.table("clients").update(update_data).eq("id", client_id).execute()
+
+    return await get_client_detail(client_id, _)
+
+
+@router.delete("/{client_id}")
+async def delete_client(client_id: str, _: str = Depends(verify_token)):
+    """Удаление клиента (записи удалятся каскадно)."""
+    existing = supabase.table("clients").select("id").eq("id", client_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Удаляем связанные записи вручную (на случай если нет CASCADE)
+    supabase.table("recordings").delete().eq("client_id", client_id).execute()
+    supabase.table("clients").delete().eq("id", client_id).execute()
+
+    return {"ok": True}

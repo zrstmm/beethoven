@@ -4,9 +4,8 @@ from app.config import OPENROUTER_API_KEY
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Бесплатная мультимодальная модель (временное решение, можно менять)
-STT_MODEL = "google/gemini-2.0-flash-exp:free"
-ANALYSIS_MODEL = "google/gemini-2.0-flash-exp:free"
+STT_MODEL = "google/gemini-2.5-flash"
+ANALYSIS_MODEL = "google/gemini-2.5-flash"
 
 
 async def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/ogg") -> str:

@@ -1,101 +1,138 @@
 # Beethoven — Контекст разработки
 
 ## Что это
-Система автоматизации анализа продаж для музыкальной студии Beethoven (Астана + Усть-Каменогорск). Три компонента: Telegram-бот, FastAPI backend, React админ-панель.
+Система автоматизации анализа пробных уроков и продаж для сети музыкальных студий Beethoven (Астана + Усть-Каменогорск). Три компонента: Telegram-бот, FastAPI backend, React админ-панель.
 
-## Текущий статус: MVP готов, тестируем
+## Текущий статус: продукт готов, в тестировании
 
-### Что сделано
-- **Backend** (FastAPI + Pydantic + supabase-py) — все эндпоинты написаны, работает на порту 8000
-- **Telegram-бот** (aiogram 3) — регистрация, отправка аудио (пошагово и одним сообщением), работает
-- **Frontend** (React + Vite + CSS) — логин, канбан-доска, модалка анализа, аналитика, настройки
-- **Supabase** — таблицы созданы, storage bucket `audio` создан
-- **Зависимости** — всё установлено (venv в backend/ и bot/, node_modules в frontend/)
-- **.env файлы** — заполнены (backend/.env и bot/.env)
-- **Vite proxy** — исправлен (127.0.0.1 вместо localhost для IPv4/IPv6 совместимости)
-- **Пароль админки** — синхронизируется из .env в БД при старте backend
+### Что работает
+- **Backend** (FastAPI) — все эндпоинты, включая CRUD клиентов (GET/PUT/DELETE), расширенная аналитика
+- **Telegram-бот** (aiogram 3 + Pyrogram) — регистрация, загрузка аудио с быстрыми кнопками дат/времени, разделение потоков (преподаватель vs МОП)
+- **Frontend** (React + Vite) — Apple-style B&W дизайн, канбан-доска с edit/delete, 6 блоков аналитики, настройки
+- **AI-пайплайн** — Gemini 2.5 Flash через OpenRouter (транскрибация + анализ)
+- **Supabase** — PostgreSQL (таблицы, индексы), аудио НЕ хранится (только текст)
+- **Pyrogram** — скачивание файлов до 2GB через MTProto
 
-### Где остановились
-**Проблема: Telegram Bot API ограничивает скачивание файлов до 20MB**. Записи преподавателей ~60 мин, МОПов ~20-30 мин — файлы больше 20MB.
+### Ключевые решения
+- **Модель AI**: `google/gemini-2.5-flash` (и STT, и анализ) — ~$0.16 за часовую запись
+- **Аудио не хранится на сервере** — скачивается, сжимается ffmpeg (mono 32kbps OGG), отправляется в OpenRouter и выбрасывается
+- **Город сохраняется в localStorage** админки
+- **Преподаватели не выбирают результат** (купил/не купил) — только МОПы
+- **result опционален** на backend — можно создавать записи без него
 
-**Выбранное решение: Pyrogram** — использовать для скачивания файлов. Pyrogram работает через MTProto (лимит 2GB). aiogram остаётся для логики бота.
-
-### Что нужно сделать дальше
-1. **Пользователь должен:**
-   - Зайти на https://my.telegram.org
-   - Залогиниться → "API development tools" → создать приложение
-   - Получить `api_id` и `api_hash`
-   - Добавить их в `bot/.env`
-
-2. **Разработка:**
-   - Установить pyrogram + tgcrypto в bot/venv
-   - Добавить `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` в bot/config.py
-   - Создать pyrogram клиент в боте (инициализация с bot_token)
-   - Заменить `bot.get_file()` + `bot.download_file()` на pyrogram download в handlers/upload.py
-   - Добавить обработку ошибок в upload handler
-   - Протестировать с большим аудиофайлом
-
-3. **После решения проблемы с файлами:**
-   - Протестировать полный pipeline: аудио → Supabase Storage → OpenRouter STT → OpenRouter анализ → оценка в БД
-   - Проверить отображение на канбан-доске
-   - Проверить модалку с анализом
-   - Проверить раздел аналитики
-
-## Как запустить
-```bash
-# Backend (порт 8000)
-cd D:/repo/beethoven/backend
-./venv/Scripts/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-# Telegram бот
-cd D:/repo/beethoven/bot
-./venv/Scripts/python main.py
-
-# Frontend (порт 5173, проксирует /api на backend)
-cd D:/repo/beethoven/frontend
-npx vite --port 5173
-```
+### Стоимость обслуживания (~15,000-27,000 тг/мес)
+| Статья | Стоимость |
+|--------|-----------|
+| VPS (1 vCPU, 1 GB RAM) | ~2,500-3,000 тг |
+| OpenRouter (Gemini 2.5 Flash) | ~12,000-24,000 тг (зависит от кол-ва и длины записей) |
+| Supabase (Free план, 500 MB) | 0 тг (хватит на ~2-3 года) |
+| Telegram Bot API | 0 тг |
 
 ## Стек
-- Backend: Python, FastAPI, Pydantic, supabase-py
-- Bot: aiogram 3, httpx (+ будет pyrogram для скачивания файлов)
-- Frontend: React, JavaScript, CSS, Vite, Recharts
-- БД: Supabase (PostgreSQL + Storage)
-- AI: OpenRouter (бесплатная модель для STT и анализа)
+- **Backend**: Python 3.12, FastAPI, Pydantic, supabase-py, PyJWT, httpx
+- **Bot**: aiogram 3 (FSM), Pyrogram (MTProto файлы), httpx
+- **Frontend**: React 18, Vite, Recharts, Lucide React (иконки), CSS
+- **БД**: Supabase (PostgreSQL)
+- **AI**: OpenRouter → Google Gemini 2.5 Flash (STT + анализ)
 
 ## Структура файлов
 ```
 beethoven/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py          — FastAPI приложение
-│   │   ├── config.py         — переменные окружения
-│   │   ├── database.py       — Supabase клиент
-│   │   ├── schemas.py        — Pydantic модели
-│   │   ├── auth.py           — JWT авторизация
-│   │   ├── routers/          — API эндпоинты
-│   │   └── services/         — OpenRouter STT + анализ, pipeline
+│   │   ├── main.py              — FastAPI приложение, CORS, startup
+│   │   ├── config.py            — переменные окружения
+│   │   ├── database.py          — Supabase клиент
+│   │   ├── schemas.py           — Pydantic модели (Client, Recording, Analytics...)
+│   │   ├── auth.py              — JWT авторизация
+│   │   ├── routers/
+│   │   │   ├── auth.py          — POST /api/auth/login
+│   │   │   ├── employees.py     — CRUD сотрудников
+│   │   │   ├── recordings.py    — POST /api/recordings (загрузка), GET status
+│   │   │   ├── clients.py       — GET/PUT/DELETE /api/clients
+│   │   │   ├── analytics.py     — GET /api/analytics (6 блоков)
+│   │   │   └── settings.py      — GET/PUT /api/settings
+│   │   └── services/
+│   │       ├── pipeline.py      — фоновая обработка: ffmpeg → STT → анализ
+│   │       └── openrouter.py    — Gemini 2.5 Flash API (STT + LLM)
 │   ├── .env
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── venv/
 ├── bot/
-│   ├── main.py               — запуск бота
-│   ├── config.py
+│   ├── main.py                  — запуск бота (aiogram + Pyrogram)
+│   ├── config.py                — переменные окружения
 │   ├── handlers/
-│   │   ├── register.py       — регистрация сотрудников
-│   │   ├── upload.py         — отправка аудиозаписей ← НУЖНО ОБНОВИТЬ (pyrogram)
-│   │   └── profile.py        — профиль и статус
+│   │   ├── register.py          — регистрация: имя → город → роль → направления
+│   │   ├── upload.py            — загрузка аудио: кнопки дат/времени, role-aware flow
+│   │   └── profile.py           — /profile, /status
 │   ├── .env
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── venv/
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx
-│   │   ├── api/client.js     — HTTP клиент
-│   │   ├── components/       — Layout, ClientModal
-│   │   ├── pages/            — Login, Analyses, Analytics, Settings
-│   │   └── styles/
-│   ├── package.json
-│   └── vite.config.js
-├── supabase_schema.sql
-├── plan.md
-└── CONTEXT.md                ← этот файл
+│   │   ├── main.jsx             — точка входа React
+│   │   ├── App.jsx              — роутинг, город в localStorage
+│   │   ├── api/client.js        — HTTP клиент (login, CRUD clients, analytics, settings)
+│   │   ├── components/
+│   │   │   ├── Layout.jsx       — header (blur), sidebar (Lucide иконки), city segmented
+│   │   │   ├── ClientModal.jsx  — детальный просмотр клиента + записи
+│   │   │   └── EditClientModal.jsx — редактирование клиента (имя, результат)
+│   │   ├── pages/
+│   │   │   ├── LoginPage.jsx    — B&W логин
+│   │   │   ├── AnalysesPage.jsx — канбан-доска (7 дней), edit/delete карточек
+│   │   │   ├── AnalyticsPage.jsx — 6 секций: donut, тренд, рейтинг, направления, оценки, топ
+│   │   │   └── SettingsPage.jsx — промпты + пароль
+│   │   └── styles/global.css    — Apple-style B&W тема, анимации
+│   ├── index.html               — Inter font (Google Fonts)
+│   ├── package.json             — react, recharts, lucide-react
+│   ├── vite.config.js           — proxy /api → localhost:8000
+│   └── node_modules/
+├── supabase_schema.sql          — DDL: employees, clients, recordings, settings
+├── CONTEXT.md                   ← этот файл
+├── start.md                     — инструкция запуска
+└── plan.md
 ```
+
+## API эндпоинты
+| Метод | Путь | Описание |
+|-------|------|----------|
+| POST | /api/auth/login | Логин (пароль → JWT) |
+| POST | /api/employees | Регистрация сотрудника |
+| GET | /api/employees/{telegram_id} | Профиль сотрудника |
+| PUT | /api/employees/{telegram_id} | Обновление профиля |
+| POST | /api/recordings | Загрузка аудио + метаданные |
+| GET | /api/recordings/{id}/status | Статус обработки |
+| GET | /api/clients | Канбан (city + week_start) |
+| GET | /api/clients/{id} | Детали клиента + записи |
+| PUT | /api/clients/{id} | Редактирование клиента |
+| DELETE | /api/clients/{id} | Удаление клиента (каскадно) |
+| GET | /api/analytics | Аналитика (6 блоков) |
+| GET | /api/settings | Все настройки |
+| PUT | /api/settings/{key} | Обновление настройки |
+
+## Бот: FSM-флоу загрузки аудио
+```
+Аудио с подписью → автопарсинг → upload (преподаватель: без result)
+Аудио без подписи → date_input (кнопки: Сегодня/Вчера/Завтра)
+                  → time_input (сетка 09:00-20:00)
+                  → client_name
+                  → result (только МОП: Купил/Не купил/Предоплата)
+                  → upload
+```
+
+## Аналитика (6 блоков)
+1. **Конверсия** — donut chart с % в центре
+2. **Распределение оценок** — гистограмма 1-10
+3. **Тренд конверсии по неделям** — area chart
+4. **Рейтинг сотрудников** — таблица с bar
+5. **По направлениям** — stacked bar chart
+6. **Топ лучших/худших + частые ошибки**
+
+## Что можно улучшить дальше
+- Уведомления в Telegram когда анализ готов
+- Экспорт аналитики в PDF/Excel
+- Сравнение периодов (месяц к месяцу)
+- Мобильная адаптация админки
+- Автоочистка старых транскрипций (экономия места в Supabase)
+- Дашборд для владельца с KPI
+- Интеграция с CRM

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: slideUp 0.3s ease;
 }
 
 .week-nav {
@@ -14,22 +15,26 @@
   background: var(--bg-card);
   color: var(--text);
   border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
 }
 
 .week-btn:hover {
   background: var(--bg-hover);
+  border-color: var(--text-muted);
 }
 
 .calendar-btn {
-  font-size: 18px;
-  padding: 4px 10px;
+  padding: 8px 10px;
 }
 
 .week-label {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   min-width: 220px;
   text-align: center;
@@ -44,31 +49,37 @@
   top: 100%;
   left: 0;
   margin-top: 8px;
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 12px;
   display: flex;
   gap: 8px;
   z-index: 50;
+  animation: scaleIn 0.15s ease;
 }
 
 .date-picker-dropdown input {
-  background: var(--bg-card);
+  background: var(--bg-secondary);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
 }
 
 .date-picker-go {
   background: var(--accent);
   color: #000;
   padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
   font-weight: 600;
+  transition: background var(--transition);
+}
+
+.date-picker-go:hover {
+  background: var(--accent-hover);
 }
 
 .loading {
@@ -86,13 +97,14 @@
 
 .kanban-col {
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   min-width: 0;
+  overflow: hidden;
 }
 
 .kanban-col.today {
-  border-color: var(--accent);
+  border-top: 2px solid var(--accent);
 }
 
 .kanban-header {
@@ -104,10 +116,11 @@
 }
 
 .day-name {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .kanban-col.today .day-name {
@@ -129,21 +142,56 @@
 .client-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 10px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--transition);
+  position: relative;
 }
 
 .client-card:hover {
-  border-color: var(--accent);
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.card-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.client-card:hover .card-actions {
+  opacity: 1;
+}
+
+.card-action-btn {
   background: var(--bg-hover);
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition);
+}
+
+.card-action-btn:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
+.card-action-delete:hover {
+  color: var(--red);
 }
 
 .card-time {
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--text);
   margin-bottom: 4px;
 }
 
@@ -157,21 +205,44 @@
   font-size: 11px;
   color: var(--text-muted);
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
-.card-result {
-  font-size: 11px;
+.card-result-pill {
+  font-size: 10px;
   font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.card-result-pill.bought {
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--green);
+}
+
+.card-result-pill.not_bought {
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--red);
+}
+
+.card-result-pill.prepayment {
+  background: rgba(255, 214, 10, 0.15);
+  color: var(--yellow);
 }
 
 .card-score {
   font-size: 11px;
   color: var(--text-muted);
+  font-weight: 600;
 }

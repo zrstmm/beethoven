@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react'
 import { getClientDetail } from '../api/client'
+import { X, ChevronRight, ChevronDown } from 'lucide-react'
 import './ClientModal.css'
 
 const RESULT_LABELS = {
   bought: 'Купил',
   not_bought: 'Не купил',
   prepayment: 'Предоплата',
-}
-
-const RESULT_COLORS = {
-  bought: 'var(--green)',
-  not_bought: 'var(--red)',
-  prepayment: 'var(--yellow)',
 }
 
 const ROLE_LABELS = {
@@ -42,6 +37,11 @@ function ScoreBar({ score }) {
 export default function ClientModal({ clientId, onClose }) {
   const [client, setClient] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => document.body.classList.remove('modal-open')
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -82,13 +82,13 @@ export default function ClientModal({ clientId, onClose }) {
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal">
-        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-close" onClick={onClose}><X size={18} /></button>
 
         <div className="modal-header">
           <h2 className="modal-title">{client.name}</h2>
           <p className="modal-meta">{dateStr}, {timeStr}</p>
           {client.result && (
-            <span className="modal-result" style={{ color: RESULT_COLORS[client.result] }}>
+            <span className={`modal-result-pill ${client.result}`}>
               {RESULT_LABELS[client.result]}
             </span>
           )}
@@ -139,7 +139,8 @@ function RecordingBlock({ recording }) {
                 className="transcription-toggle"
                 onClick={() => setShowTranscription(!showTranscription)}
               >
-                {showTranscription ? '▾ Скрыть транскрипцию' : '▸ Показать транскрипцию'}
+                {showTranscription ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span>{showTranscription ? 'Скрыть транскрипцию' : 'Показать транскрипцию'}</span>
               </button>
               {showTranscription && (
                 <div className="transcription-text">

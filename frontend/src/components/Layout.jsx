@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { clearToken } from '../api/client'
+import { BarChart3, PieChart, Settings, LogOut } from 'lucide-react'
 import './Layout.css'
 
 const CITIES = {
@@ -22,31 +23,42 @@ export default function Layout({ children, city, setCity }) {
           <h1 className="logo">BEETHOVEN</h1>
         </div>
         <div className="header-right">
-          <select
-            className="city-select"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          >
+          <div className="city-segmented">
             {Object.entries(CITIES).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <button
+                key={value}
+                className={`city-seg-btn ${city === value ? 'active' : ''}`}
+                onClick={() => setCity(value)}
+              >
+                {label}
+              </button>
             ))}
-          </select>
-          <button className="logout-btn" onClick={handleLogout}>Выйти</button>
+          </div>
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
       <div className="main-container">
         <aside className="sidebar">
           <nav className="sidebar-nav">
             <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} end>
-              Анализы
+              <BarChart3 size={18} />
+              <span>Анализы</span>
             </NavLink>
             <NavLink to="/analytics" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Аналитика
+              <PieChart size={18} />
+              <span>Аналитика</span>
             </NavLink>
             <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Настройки
+              <Settings size={18} />
+              <span>Настройки</span>
             </NavLink>
           </nav>
+          <button className="sidebar-logout" onClick={handleLogout}>
+            <LogOut size={16} />
+            <span>Выйти</span>
+          </button>
         </aside>
         <main className="content">
           {children}

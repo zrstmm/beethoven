@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getClients } from '../api/client'
+import { getClients, deleteClient } from '../api/client'
+import { ChevronLeft, ChevronRight, Calendar, Music, Briefcase, Pencil, Trash2 } from 'lucide-react'
 import ClientModal from '../components/ClientModal'
+import EditClientModal from '../components/EditClientModal'
 import './AnalysesPage.css'
 
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
@@ -8,12 +10,6 @@ const MONTH_NAMES = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
 ]
-
-const RESULT_COLORS = {
-  bought: 'var(--green)',
-  not_bought: 'var(--red)',
-  prepayment: 'var(--yellow)',
-}
 
 const RESULT_LABELS = {
   bought: 'Купил',
@@ -49,6 +45,7 @@ export default function AnalysesPage({ city }) {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedClient, setSelectedClient] = useState(null)
+  const [editingClient, setEditingClient] = useState(null)
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [datePickerValue, setDatePickerValue] = useState('')
 
@@ -95,18 +92,34 @@ export default function AnalysesPage({ city }) {
     })
   }
 
+  async function handleDelete(clientId, e) {
+    e.stopPropagation()
+    if (!confirm('Удалить клиента и все записи?')) return
+    try {
+      await deleteClient(clientId)
+      fetchClients()
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  function handleEdit(client, e) {
+    e.stopPropagation()
+    setEditingClient(client)
+  }
+
   const sunday = weekDays[6]
   const weekLabel = `${monday.getDate()} - ${sunday.getDate()} ${MONTH_NAMES[sunday.getMonth()]} ${sunday.getFullYear()}`
 
   return (
     <div className="analyses-page">
       <div className="week-nav">
-        <button className="week-btn" onClick={prevWeek}>◀</button>
+        <button className="week-btn" onClick={prevWeek}><ChevronLeft size={16} /></button>
         <span className="week-label">{weekLabel}</span>
-        <button className="week-btn" onClick={nextWeek}>▶</button>
+        <button className="week-btn" onClick={nextWeek}><ChevronRight size={16} /></button>
         <div className="date-picker-wrap">
           <button className="week-btn calendar-btn" onClick={() => setDatePickerOpen(!datePickerOpen)}>
-            📅
+            <Calendar size={16} />
           </button>
           {datePickerOpen && (
             <div className="date-picker-dropdown">
@@ -147,6 +160,14 @@ export default function AnalysesPage({ city }) {
                       className="client-card"
                       onClick={() => setSelectedClient(client.id)}
                     >
+                      <div className="card-actions">
+                        <button className="card-action-btn" onClick={(e) => handleEdit(client, e)} title="Редактировать">
+                          <Pencil size={12} />
+                        </button>
+                        <button className="card-action-btn card-action-delete" onClick={(e) => handleDelete(client.id, e)} title="Удалить">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                       <div className="card-time">
                         {new Date(client.lesson_datetime).toLocaleTimeString('ru', {
                           hour: '2-digit', minute: '2-digit'
@@ -154,17 +175,20 @@ export default function AnalysesPage({ city }) {
                       </div>
                       <div className="card-client">{client.name}</div>
                       {client.teacher_name && (
-                        <div className="card-employee">🎵 {client.teacher_name}</div>
+                        <div className="card-employee">
+                          <Music size={11} />
+                          <span>{client.teacher_name}</span>
+                        </div>
                       )}
                       {client.manager_name && (
-                        <div className="card-employee">💼 {client.manager_name}</div>
+                        <div className="card-employee">
+                          <Briefcase size={11} />
+                          <span>{client.manager_name}</span>
+                        </div>
                       )}
                       <div className="card-footer">
                         {client.result && (
-                          <span
-                            className="card-result"
-                            style={{ color: RESULT_COLORS[client.result] }}
-                          >
+                          <span className={`card-result-pill ${client.result}`}>
                             {RESULT_LABELS[client.result]}
                           </span>
                         )}
@@ -187,6 +211,14 @@ export default function AnalysesPage({ city }) {
         <ClientModal
           clientId={selectedClient}
           onClose={() => setSelectedClient(null)}
+        />
+      )}
+
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          onClose={() => setEditingClient(null)}
+          onSaved={() => { setEditingClient(null); fetchClients() }}
         />
       )}
     </div>

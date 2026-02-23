@@ -15,7 +15,12 @@ function PrivateRoute({ children, city, setCity }) {
 }
 
 export default function App() {
-  const [city, setCity] = useState('astana')
+  const [city, setCity] = useState(() => localStorage.getItem('beethoven_city') || 'astana')
+
+  const handleSetCity = (c) => {
+    setCity(c)
+    localStorage.setItem('beethoven_city', c)
+  }
 
   return (
     <Routes>
@@ -23,7 +28,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <PrivateRoute city={city} setCity={setCity}>
+          <PrivateRoute city={city} setCity={handleSetCity}>
             <AnalysesPage city={city} />
           </PrivateRoute>
         }
@@ -31,7 +36,7 @@ export default function App() {
       <Route
         path="/analytics"
         element={
-          <PrivateRoute city={city} setCity={setCity}>
+          <PrivateRoute city={city} setCity={handleSetCity}>
             <AnalyticsPage city={city} />
           </PrivateRoute>
         }
@@ -39,7 +44,7 @@ export default function App() {
       <Route
         path="/settings"
         element={
-          <PrivateRoute city={city} setCity={setCity}>
+          <PrivateRoute city={city} setCity={handleSetCity}>
             <SettingsPage />
           </PrivateRoute>
         }
